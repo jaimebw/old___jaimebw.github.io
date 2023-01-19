@@ -1,16 +1,10 @@
 ---
 layout: page
 title: About me
-subtitle: Why you'd want to go on a date with me
+subtitle: Or, why I  am so cool? 
 ---
+Hey there 👋🏻,
 
-My name is Inigo Montoya. I have the following qualities:
+I'm Jaime Bowen Varela, an aerospace engineer with a passion for blending cutting-edge technology and data science. As a master's student in Computer Science at Worcester Polytechnical Institute, I'm always on the lookout for new and exciting opportunities to push the boundaries of what's possible.
 
-- I rock a great mustache
-- I'm extremely loyal to my family
-
-What else do you need?
-
-### My story
-
-To be honest, I'm having some trouble remembering right now, so why don't you just watch [my movie](https://en.wikipedia.org/wiki/The_Princess_Bride_%28film%29) and it will answer **all** your questions.
+I'm currently in search of an internship for the summer, and if you're impressed by my profile, don't hesitate to hit me up on LinkedIn. Let's make some waves in the aerospace industry together!( My CV is available [here](assets/pdf/cv.pdf)
