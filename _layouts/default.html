@@ -1,13 +1,6 @@
 ---
 layout: base
 ---
- <head>
- ...
-   {% if jekyll.environment == 'production' and site.google_analytics %}
-   {% include analytics.html %}
-   {% endif %}
- </head>
- <body>
 <div class="intro-header"></div>
 
 <div role="main" class="{% if page.full-width %} container-fluid {% else %} container-md {% endif %}">
@@ -29,4 +22,3 @@ layout: base
     </div>
   {% endif %}
 </div>
-</body>
