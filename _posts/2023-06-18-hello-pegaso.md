@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  ¡Hola Pegaso!
-subtitle: Espiando a la DGT 
+subtitle: Vigilando a la vigilancia aérea
 tags: [python, aws, REST API]
 comments: true
 ---
@@ -154,13 +154,15 @@ def lambda_handler(event,context):
 ```
 
 ## 5. Monitorizando las aeronaves
-Con todo esto, ya era hora de realizar un análisis de los helicópteros. Durante 3 semanas, cada 10 minutos de 8:00 a 19:00, recopilé la información de estos helicópteros e hice un pequeño Dashboard con Streamlit.  Podéis verlo aquí: 
-[Dashboard](https://jaimebw-hello-pegaso-heli-dash-w7sdje.streamlit.app/?embed_options=show_padding,light_theme)
+Con todo esto, ya era hora de realizar un análisis de los helicópteros. Durante 3 semanas, cada 10 minutos de 8:00 a 19:00, recopilé la información de estos helicópteros e hice un pequeño Dashboard con Streamlit. Podéis verlo [aquí](https://jaimebw-hello-pegaso-heli-dash-w7sdje.streamlit.app/?embed_options=show_padding,light_theme) o si os interesa ver el código fuente lo teneís [aquí](https://github.com/jaimebw/hello_pegaso).
 
-De los 13 helicópteros, solo pude monitorizar uno. Creo que esto debe ser porque el resto no vuela o no tiene el ADSB encendido, aun así, el que volaba se puede observar en varios momentos. Para ver por donde le gustaba volar más, hice un mapa de densidad y sectoricé usando la librería h3 de Uber. El dashboard muestra un mapa con los sectores que más pasan los helicópteros. Tengo malas noticias para ti si te gusta conducir por la A-4, y si vives por la zona de Boadilla/Brunnete. Se puede filtrar por día y ver la trayectoria de los helicópteros por la zona.
+De los 13 helicópteros, solo pude monitorizar uno. Creo que esto debe ser porque el resto no vuela o no tiene el ADSB encendido, aun así, el que volaba se puede observar en varios momentos. Para ver por dónde le gustaba volar más, hice un mapa de densidad y sectoricé usando la librería [h3](https://h3geo.org/) de Uber. El dashboard muestra un mapa con los sectores que más pasan los helicópteros. Tengo malas noticias para ti si te gusta conducir por la A-4, y si vives por la zona de Boadilla/Brunete. 
+![Heli heatmp](assets/img/hello_pegaso_post/heatmap.png)
 
+También se puede filtar por día para ver las trayectorias de los helicopteros por día.
+![Heli heatmp](assets/img/hello_pegaso_post/trayectory.png)
 
 ## 6. Las buenas noticias y futuro proyectos
-Este experimento demuestra que se pueden localizar estas aeronaves en tiempo real. También demuestra que la mayoría no vuelan, y la que vuela, vuela poco(menos mal, dudo que pongan suficiente multas para poder justificar los 1500€/h de cada helicóptero)
+Este experimento demuestra que se pueden localizar estas aeronaves en tiempo real. También demuestra que la mayoría no vuelan, y la que vuela, vuela poco(y menos mal, dudo que pongan suficiente multas para poder justificar los 1500€/h de cada helicóptero)
 
 Además, estos mosquitos solo pueden picarte siempre y cuando tenga una separación de 1000m como máximo a tu vehículo. Con la latitud, longitud y la altitud de la aeronave sería trivial calcular la distancia entre un vehículo con GPS y la aeronave, por lo que implementar esto en una app sería bastante sencillo. 
