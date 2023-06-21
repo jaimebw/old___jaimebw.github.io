@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  ¡Hola Pegaso!
+title:  ¡Hola Pegasus!
 subtitle: Vigilando a la vigilancia aérea
 tags: [python, aws, REST API]
 comments: true
@@ -8,7 +8,7 @@ image1: /assets/img/hello_pegaso_post/heatmap.png
 image2: /assets/img/hello_pegaso_post/trayectory.png
 ---
 ## 1. Introducción
-Hace unos meses, conduciendo por la autopista, vi un cartel de la DGT que advertía de la presencia de helicópteros en la zona. Por lo general, cuando voy a realizar un viaje largo, utilizo un navegador como Waze que me informa de problemas, radares o incidentes en la carretera. Sin embargo, no me avisa si hay helicópteros [PEGASO](https://www.xataka.com/movilidad/casi-indetectable-supercamara-mx15-asi-funcionan-helicopteros-pegasus-dgt) de la DGT cerca de mí. Eso me hizo preguntarme si habría alguna forma de localizarlos en tiempo real y así poder evitar algún susto.
+Hace unos meses, conduciendo por la autopista, vi un cartel de la DGT que advertía de la presencia de helicópteros en la zona. Por lo general, cuando voy a realizar un viaje largo, utilizo un navegador como Waze que me informa de radares o incidentes en la carretera. Sin embargo, no me avisa si hay helicópteros [PEGASUS](https://www.xataka.com/movilidad/casi-indetectable-supercamara-mx15-asi-funcionan-helicopteros-pegasus-dgt) de la DGT cerca de mí. Eso me hizo preguntarme si habría alguna forma de localizarlos en tiempo real y así poder evitar algún susto.
 
 Creo que los controles de velocidad fijos son legítimos y ayudan a reducir la siniestralidad en las carreteras. Sin embargo, considero que los controles de velocidad móviles solo tienen fines recaudatorios y, en mi opinión, son un abuso por parte de las autoridades de este país. Sobretodo cuando usan un helicoptero que tiene un [coste de vuelo por hora](https://www.autobild.es/noticias/exclusiva-calculan-cuanto-gasta-dgt-cada-ano-helicopteros-pegasus-277887) de unos 1500€.  Pero bueno, manifiestos políticos aparte, vayamos al lio.
 
