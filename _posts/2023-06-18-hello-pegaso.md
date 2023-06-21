@@ -162,8 +162,7 @@ De los 13 helicópteros, solo pude monitorizar uno. Creo que esto debe ser porqu
 ![Heli heatmp]({{page.image1 | relative_url }})
 
 También se puede filtar por día para ver las trayectorias de los helicopteros por día.
-![Heli heatmp](https://github.com/jaimebw/jaimebw.github.io/blob/1318ea504e7a721ea7d75838a27f0c2b806badfa/assets/img/hello_pegaso_post/trayectory.png)
-
+![trayectory]({{page.image2 | relative_url }})
 ## 6. Las buenas noticias y futuro proyectos
 Este experimento demuestra que se pueden localizar estas aeronaves en tiempo real. También demuestra que la mayoría no vuelan, y la que vuela, vuela poco(y menos mal, dudo que pongan suficiente multas para poder justificar los 1500€/h de cada helicóptero)
 
