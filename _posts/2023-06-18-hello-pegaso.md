@@ -159,7 +159,8 @@ def lambda_handler(event,context):
 Con todo esto, ya era hora de realizar un análisis de los helicópteros. Durante 3 semanas, cada 10 minutos de 8:00 a 19:00, recopilé la información de estos helicópteros e hice un pequeño Dashboard con Streamlit. Si os interesa ver el código fuente lo teneís [aquí](https://github.com/jaimebw/hello_pegaso).
 
 <iframe
-  src = "https://jaimebw-hello-pegaso-heli-dash-w7sdje.streamlit.app/?embed_options=show_padding,light_theme"
+  src = "https://jaimebw-hello-pegaso.streamlit.app/?embed=true"
+  height="450"
   style="width:100%;border:none;"
 ></iframe>
 
