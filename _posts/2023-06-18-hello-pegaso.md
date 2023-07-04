@@ -156,7 +156,13 @@ def lambda_handler(event,context):
 ```
 
 ## 5. Monitorizando las aeronaves
-Con todo esto, ya era hora de realizar un análisis de los helicópteros. Durante 3 semanas, cada 10 minutos de 8:00 a 19:00, recopilé la información de estos helicópteros e hice un pequeño Dashboard con Streamlit. Podéis verlo [aquí](https://jaimebw-hello-pegaso-heli-dash-w7sdje.streamlit.app/?embed_options=show_padding,light_theme) o si os interesa ver el código fuente lo teneís [aquí](https://github.com/jaimebw/hello_pegaso).
+Con todo esto, ya era hora de realizar un análisis de los helicópteros. Durante 3 semanas, cada 10 minutos de 8:00 a 19:00, recopilé la información de estos helicópteros e hice un pequeño Dashboard con Streamlit. Si os interesa ver el código fuente lo teneís [aquí](https://github.com/jaimebw/hello_pegaso).
+
+<iframe
+  src = "https://jaimebw-hello-pegaso-heli-dash-w7sdje.streamlit.app/?embed_options=show_padding,light_theme"
+  style="width:100%;border:none;"
+></iframe>
+
 
 De los 13 helicópteros, solo pude monitorizar uno. Creo que esto debe ser porque el resto no vuela o no tiene el ADSB encendido, aun así, el que volaba se puede observar en varios momentos. Para ver por dónde le gustaba volar más, hice un mapa de densidad y sectoricé usando la librería [h3](https://h3geo.org/) de Uber. El dashboard muestra un mapa con los sectores que más pasan los helicópteros. Tengo malas noticias para ti si te gusta conducir por la A-4, y si vives por la zona de Boadilla/Brunete. 
 ![Heli heatmp]({{page.image1 | relative_url }})
