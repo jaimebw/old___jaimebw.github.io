@@ -4,19 +4,19 @@ title:  Encoding ARINC429
 subtitle: A guide and resource
 tags: [a429,wasm,cpp,c]
 comments: true
-image2: /assets/img/hello_pegaso_post/trayectory.png
 ---
-# 1. Introduction
 *Note*: press [here](#enc-calc) to go directly to the encoding calculator.
+# 1. Introduction
 
-If you have ever had to deal with avionics in aircraft, you'd definityle had to cross paths with ARINC429.
-This protocol is the standard used for transferring data between different systems and honestly, it is painful to use sometimes.
-Designed in the 70s, it has an odd way of sending stuff areound and it is also limited in the quantity of information that you can send around. 
+If you have ever dealt with avionics in aircraft, you've definitely crossed paths with ARINC429.
+This protocol is the standard used for transferring data between different systems in aviation, and it can be challenging to work with at times.
+Designed in the 1970s, it has a unique way of transmitting data and is limited in the quantity of information it can send. Despite its age, ARINC429 remains widely used in modern aircraft due to its reliability and established infrastructure.
 
-This post intends to help the newbies/not-so-newbies on how it worsk from a software perspective. If you want a more details, check this links:
+This post intends to help the newbies/not-so-newbies on how it works from a software perspective. If you want a more details, check this links:
 * [Wikipedia](https://en.wikipedia.org/wiki/ARINC_429)
 * [AIM](https://www.aim-online.com/wp-content/uploads/2019/07/aim-tutorial-oview429-190712-u.pdf)
 
+Also, at the end of this post, you'll find a handy tool for calculating ARINC429 encoding values.
 
 # 2. ARINC429 101: Basics
 
@@ -28,15 +28,18 @@ We can distingish three main different types of encoding:
 * Binary Coded Decimal (BCD): normally used to encode integers
 * Discrete (DSC): used to encode state values ( ON/OFF values for example)
 
+There are more types but we wont discuss them here.
+
 ## 2.1 The Word format
-As shown on the table, we can distingish(starting from the left):
+An ARINC429 word is made up of 5 different parts:
 
 * **Label**: the id of the information. Fixed for the system but it can change between aplications.
 * **Source/Destination Identifiers(SDI)**: indicates the intended receiver/transmitting subsystem. 
 * **Data**: the encoded data
-* **Sign/Status Matrix**: indicates status or the sign of the data being sent
-* **Parity**: error code. It uses the odd parity to make sure that the message information has not been corrupted.
+* **Sign/Status Matrix(SSM)**: indicates status or the sign of the data being sent
+* **Parity(P)**: error code. It uses the odd parity to make sure that the message information has not been corrupted.
 
+The below table shows a visual representation of the word.
 <div id="first-table">
 <table class="wikitable" style="display: flex; border: none;"> 
   <tr>
@@ -91,73 +94,23 @@ As shown on the table, we can distingish(starting from the left):
 </div>
 
 
-The striking thing about ARINC429 is that when it is transmitted, we reverse the label( ie: 76543210 to 01234567)
-The next table shows how it actually looks when we serialize a word into the bus. 
+The intersting aspect of ARINC429 is that when transmitted, the label is reversed (e.g., binary 01101010 becomes 01010110).
+The following table illustrates how a word appears when serialized onto the bus:
 
-NOTE: this ARINC429 word is packed in little-endian format (LSB goes before MSB)
-<div id="second-table">
-<table class="wikitable" style="width:100%; border-collapse: collapse; table-layout: fixed;">
-  <tr>
-    <th colspan="32">ARINC 429 Word Format</th>
-  </tr>
-  <tr>
-    <th style="width: 3.125%;">P</th>
-    <th colspan="2" style="width: 6.25%; font-size: 75%;">SSM</th>
-    <th colspan="4" style="width: 12.5%; font-size: 75%; text-align: left; border: none;">MSB</th>
-    <th colspan="19" style="width: 59.375%; text-align: center; border: none;">Data</th>
-    <th colspan="2" style="width: 6.25%; font-size: 75%; text-align: right; border: none;">LSB</th>
-    <th colspan="2" style="width: 6.25%; font-size: 75%; text-align: left; border: none;">SDI</th>
-    <th colspan="4" style="width: 12.5%; color: red; text-align: center; border: none;">Label</th>
-    <th colspan="2" style="width: 6.25%; font-size: 75%; text-align: right; border: none;">MSB</th>
-  </tr>
-  <tr style="font-size: 60%; text-align: center;">
-    <td>32</td>
-    <td>31</td>
-    <td>30</td>
-    <td>29</td>
-    <td>28</td>
-    <td>27</td>
-    <td>26</td>
-    <td>25</td>
-    <td>24</td>
-    <td>23</td>
-    <td>22</td>
-    <td>21</td>
-    <td>20</td>
-    <td>19</td>
-    <td>18</td>
-    <td>17</td>
-    <td>16</td>
-    <td>15</td>
-    <td>14</td>
-    <td>13</td>
-    <td>12</td>
-    <td>11</td>
-    <td>10</td>
-    <td>9</td>
-    <td>8</td>
-    <td>7</td>
-    <td>6</td>
-    <td>5</td>
-    <td>4</td>
-    <td>3</td>
-    <td>2</td>
-    <td>1</td>
-  </tr>
-</table>
-</div>
 
 | P  | SSM |     Data   | SDI | Label | 
 |---|------|------------|-----|------|
-|32 |31 - 30  | 29 <---> 11| 10 - 9   | 8 <---> 1  |
+|32 |31 - 30  | 29 <---> 11| 10 - 9   | 1 <---> 8  |
 
-
-## 2.2 Using the SDI
-To understand with the SDI does it’s interesting to think of it as a personalised label. Imagine we have two flight computers that are giving showing us the position in our MFD. The MFD will receive through ARINC429 the same label but with different SDIs so its knows from where each values comes from.
+## 2.2 Understanding SDI (Source/Destination Identifier)
+The SDI can be thought of as a way to differentiate between multiple sources or destinations for the same type of data. Here's a practical example:
+Imagine an aircraft with two flight computers, both capable of providing position information to the Multi-Function Display (MFD). 
+To distinguish between these sources we will set different SDIs to their messages.
 ## 2.3 SSM states
-The SSM status meaning will change depending on how we encode the value:
+The SSM (Sign/Status Matrix) bits have different meanings depending on the encoding type used:
 
-- BNR:
+
+### BNR:
 
 | Bit: 31 | Bit: 30 | Value in Hex | Decoded info         |
 |----|----|-----------|--------------------|
@@ -166,7 +119,7 @@ The SSM status meaning will change depending on how we encode the value:
 | 1  | 0  | 0x2       | Functional Test    |
 | 1  | 1  | 0x3       | Normal Operation   |
 
-- BCD
+### BCD
 
 | Bit: 31 | Bit: 30 | Value in Hex | Decoded info         |
 |----|----|-----------|--------------------|
@@ -175,6 +128,8 @@ The SSM status meaning will change depending on how we encode the value:
 | 1  | 0  | 0x2       | Functional Test    |
 | 1  | 1  | 0x3       | Minus, South, West, Left, From, Below|
 
+These SSM states provide important context about the data being transmitted, 
+such as its validity, directionality, or operational status.
 
 
 # 3 Encoding ARINC429
@@ -195,7 +150,7 @@ With these parameters defined, you can proceed to compute the encoded value. In 
 
 - **Label:** `0205` (Outside Air Temperature, typically represented in octal format)
 - **SSM:** `3` (Normal Operation for BNR data)
-- **SDI:** `0` (not utilized in this context)
+- **SDI:** `0` 
 - **Value:** `200°C` (assuming supersonic flight conditions)
 - **Scale:** `0.5`
 - **Offset:** `0`
@@ -220,192 +175,24 @@ Cool, now we can start the encoding process.
 5. Our label is 205(octal ). So it is 0b110010000
 6. Our parity bit needs to be 1( to be odd)
 
-With this in mind, we can add this to the below table:
 
-<div id="third-table">
-<table class="wikitable" style="display: flex; border: none;">
-  <tr>
-    <th colspan="32">OAT </th>
-  </tr>
-  <tr>
-    <th style="width: 3.125%;">P</th>
-    <th colspan="2" style="width: 6.250%;">SSM</th>
-    <th colspan="4" style="width: 12.500%; font-size: 75%; text-align: left; border: none;">MSB</th>
-    <th colspan="11" style="width: 34.375%; text-align: center; border: none;">Data</th>
-    <th colspan="4" style="width: 12.500%; font-size: 75%; text-align: right; border: none;">LSB</th>
-    <th colspan="2" style="width: 6.250%;">SDI</th>
-    <th colspan="2" style="width: 6.250%; font-size: 75%; text-align: left; border: none;">LSB</th>
-    <th colspan="4" style="width: 12.500%; text-align: center; border: none;">Label</th>
-    <th colspan="2" style="width: 6.250%; font-size: 75%; text-align: right; border-left: none;">MSB</th>
-  </tr>
-  <tr style="font-size: 66%; text-align: center;">
-    <td>32</td>
-    <td>31</td>
-    <td>30</td>
-    <td>29</td>
-    <td>28</td>
-    <td>27</td>
-    <td>26</td>
-    <td>25</td>
-    <td>24</td>
-    <td>23</td>
-    <td>22</td>
-    <td>21</td>
-    <td>20</td>
-    <td>19</td>
-    <td>18</td>
-    <td>17</td>
-    <td>16</td>
-    <td>15</td>
-    <td>14</td>
-    <td>13</td>
-    <td>12</td>
-    <td>11</td>
-    <td>10</td>
-    <td style="width: 3.125%;">9</td>
-    <td>8</td>
-    <td>7</td>
-    <td>6</td>
-    <td>5</td>
-    <td>4</td>
-    <td>3</td>
-    <td>2</td>
-    <td>1</td>
-  </tr>
-  <tr style="font-size: 66%; text-align: center;">
-    <td>1</td>
-    <td>1</td>
-    <td>1</td>
-    <td>0</td>
-    <td>0</td>
-    <td>0</td>
-    <td>0</td>
-    <td>0</td>
-    <td>0</td> 
-    <td>0</td>
-    <td>0</td>
-    <td>0</td> 
-    <td>0</td> 
-    <td>1</td> 
-    <td>1</td> 
-    <td>0</td> 
-    <td>0</td> 
-    <td>1</td> 
-    <td>0</td> 
-    <td>0</td> 
-    <td>0</td> 
-    <td>0</td> 
-    <td>0</td> 
-    <td>0</td> 
-    <td>0</td> 
-    <td>1</td> 
-    <td>0</td> 
-    <td>0</td> 
-    <td>0</td> 
-    <td>1</td> 
-    <td>0</td> 
-    <td>1</td> 
-    </tr>
-</table>
-</div>
+
 
 Finally, we reverse the label and put it out front. Note that the next table is a bit odd. 
-I show the label as the first element and then I add the rest of the word. 
 
-This is to ease for the reader the extraction of the words as we packing the word in little endian. Therefore, the first elements will be
+| P  | SSM |     Data   | SDI | Label | 
+|---|------|------------|-----|------|
+|32 |31 - 30  | 29          <--->                  11| 10 - 9   | 1 <---> 8  |
+|1 |1     1  | 0 0 0 0 0 0 0 0 0 0 1 1 0 0 1 0 0 0 0| 0 0   | 1 0 1 0 0 0 0 1 |
 
-<div id = "fourth-table" >
-<table class="wikitable" style="display: flex; border: none;">
-  <tr>
-    <th colspan="32">OAT Label fliped and add before</th>
-  </tr>
-  <tr>
-    <th colspan="8" style="width: 10.500%; text-align: center; border: none;">Label</th>
-    <th style="width: 3.125%;">P</th>
-    <th colspan="2" style="width: 6.250%;">SSM</th>
-    <th colspan="4" style="width: 12.500%; font-size: 75%; text-align: left; border: none;">MSB</th>
-    <th colspan="11" style="width: 34.375%; text-align: center; border: none;">Data</th>
-    <th colspan="4" style="width: 12.500%; font-size: 75%; text-align: right; border: none;">LSB</th>
-    <th colspan="2" style="width: 6.250%;">SDI</th>
-  </tr>
-  <tr style="font-size: 66%; text-align: center;">
-    <td>1</td>
-    <td>2</td>
-    <td>3</td>
-    <td>4</td>
-    <td>5</td>
-    <td>6</td>
-    <td>7</td>
-    <td style="color: red">8</td>
-    <td>32</td>
-    <td>31</td>
-    <td>30</td>
-    <td>29</td>
-    <td>28</td>
-    <td>27</td>
-    <td>26</td>
-    <td style="color:red">25</td>
-    <td>24</td>
-    <td>23</td>
-    <td>22</td>
-    <td>21</td>
-    <td>20</td>
-    <td>19</td>
-    <td>18</td>
-    <td style="color:red">17</td>
-    <td>16</td>
-    <td>15</td>
-    <td>14</td>
-    <td>13</td>
-    <td>12</td>
-    <td>11</td>
-    <td>10</td>
-    <td style="color: red">9</td>
-  </tr>
-  <tr>
-    <td>1</td> 
-    <td>0</td> 
-    <td>1</td> 
-    <td>0</td> 
-    <td>0</td> 
-    <td>0</td> 
-    <td>0</td> 
-    <td>1</td> 
-    <td>1</td>
-    <td>1</td>
-    <td>1</td>
-    <td>0</td>
-    <td>0</td> 
-    <td>0</td>
-    <td>0</td>
-    <td>0</td>
-    <td>0</td>
-    <td>0</td>
-    <td>0</td>
-    <td>0</td> 
-    <td>0</td> 
-    <td>1</td> 
-    <td>1</td> 
-    <td>0</td> 
-    <td>0</td> 
-    <td>1</td> 
-    <td>0</td> 
-    <td>0</td> 
-    <td>0</td> 
-    <td>0</td> 
-    <td>0</td> 
-    <td>0</td> 
-  </tr>
-</table>
-</div>
 
 Now, we need to transform this binary codes into the hexadecimal word format.
 To do so, we group in 4 bytes that generate our Words(32 bits). 
 
-* The first word  of our message includes bits from 32 to 25 : 0xE0(0b11100000)
-* The second word  of our message includes bits from 24 to 17 : 0x06(0b0000110)
-* The third word of our message includes bits from 16 to 9: 0x40 (0b100000)
-* The fourth word  of our message is the label reversed: 0xA1 (0b10100001)
+* The first byte of our message includes bits from 32 to 25 : 0xE0(0b11100000)
+* The second byte of our message includes bits from 24 to 17 : 0x06(0b0000110)
+* The third byte of our message includes bits from 16 to 9: 0x40 (0b100000)
+* The fourth byte of our message is the label reversed: 0xA1 (0b10100001)
 
 Our final word would like this: 0xE0, 0x06, 0x40, 0xA1
 
@@ -441,64 +228,22 @@ The binary representation of 2000 is 0b11111010000 (11 bits).
 
 3. Constructing the word:
    - Label: 207 (octal) = 0b10000111
-   - SDI: 00 (not used in this example)
+   - SDI: 00 
    - Data: 0b1 (tank type) + 0b011111010000 (fuel quantity)
-   - SSM: 0x03 ( it the SSM for BNR data)
+   - SSM: 0x03 (0b11)
    - Parity: To be calculated
 
 
 This finally yields with our data:
 
-<div id="fuel-table">
-<table class="wikitable" style="display: flex; border: none;">
-  <tr>
-    <th colspan="32">Fuel Tank Type and Quantity</th>
-  </tr>
-  <tr>
-    <th style="width: 3.125%;">P</th>
-    <th colspan="2" style="width: 6.250%;">SSM</th>
-    <th colspan="4" style="width: 12.500%; font-size: 75%; text-align: left; border: none;">MSB</th>
-    <th colspan="11" style="width: 34.375%; text-align: center; border: none;">Data</th>
-    <th colspan="4" style="width: 12.500%; font-size: 75%; text-align: right; border: none;">LSB</th>
-    <th colspan="2" style="width: 6.250%;">SDI</th>
-    <th colspan="8" style="width: 25.000%; text-align: center; border: none;">Label</th>
-  </tr>
-  <tr style="font-size: 86%; text-align: center;">
-    <td>1</td>
-    <td>1</td>
-    <td>1</td>
-    <td>0</td>
-    <td>1</td>
-    <td>0</td>
-    <td>1</td>
-    <td>1</td>
-    <td>1</td>
-    <td>1</td>
-    <td>1</td>
-    <td>0</td>
-    <td>1</td>
-    <td>0</td>
-    <td>0</td>
-    <td>0</td>
-    <td>0</td>
-    <td>0</td>
-    <td>0</td>
-    <td>0</td>
-    <td>0</td>
-    <td>0</td>
-    <td>0</td>
-    <td>0</td>
-    <td>0</td>
-    <td>0</td>
-    <td>1</td>
-    <td>0</td>
-    <td>0</td>
-    <td>0</td>
-    <td>1</td>
-    <td>1</td>
-  </tr>
-</table>
-</div>
+| P  | SSM |     Data   | SDI | Label | 
+|---|------|------------|-----|------|
+|32 |31 - 30  | 29          <--->                  11| 10 - 9   | 1 <---> 8  |
+|1 |1     1  | 0 1 0 1 1 1 1 1 0 1 0 0 0 0 0 0 0 0 | 0 0   | 0 0 1 0 0 0 1 1 |
+
+
+You can verify this operation in the calculator by entering both variables separately and examining the byte values on 
+the binary side. All values should match, except for the data bytes. The sum of the data bytes will produce the encoding we obtained.
 
 ## 3.3 Encoding BCD
 
