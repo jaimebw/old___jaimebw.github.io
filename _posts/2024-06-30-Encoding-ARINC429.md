@@ -29,6 +29,13 @@ We can distingish three main different types of encoding:
 * Discrete (DSC): used to encode state values ( ON/OFF values for example)
 
 ## 2.1 The Word format
+As shown on the table, we can distingish(starting from the left):
+
+* **Label**: the id of the information. Fixed for the system but it can change between aplications.
+* **Source/Destination Identifiers(SDI)**: indicates the intended receiver/transmitting subsystem. 
+* **Data**: the encoded data
+* **Sign/Status Matrix**: indicates status or the sign of the data being sent
+* **Parity**: error code. It uses the odd parity to make sure that the message information has not been corrupted.
 
 <div id="first-table">
 <table class="wikitable" style="display: flex; border: none;"> 
@@ -82,33 +89,52 @@ We can distingish three main different types of encoding:
   </tr>
 </table>
 </div>
-As shown on the table, we can distingish(starting from the left):
 
-* **Label**: the id of the information. Fixed for the system but it can change between aplications.
-* **Source/Destination Identifiers(SDI)**: indicates the intended receiver/transmitting subsystem. 
-* **Data**: the encoded data
-* **Sign/Status Matrix**: indicates status or the sign of the data being sent
-* **Parity**: error code. It uses the odd parity to make sure that the message information has not been corrupted.
 
-The striking thing about ARINC429 is that when it is transmitted, we first send the label but reversed and then the rest of the message. 
+The striking thing about ARINC429 is that when it is transmitted, we reverse the label( ie: 76543210 to 01234567)
 The next table shows how it actually looks when we serialize a word into the bus. 
 
 NOTE: this ARINC429 word is packed in little-endian format (LSB goes before MSB)
-<div id = "second-table" >
-<table class="wikitable" style="display: flex; border: none;">
+<div id="second-table">
+<table class="wikitable" style="width:100%; border-collapse: collapse; table-layout: fixed;">
   <tr>
     <th colspan="32">ARINC 429 Word Format</th>
   </tr>
   <tr>
-    <th colspan="8" style="color: red; width: 12.500%; text-align: center; border: none;">Label</th>
-    <th colspan="2" style="width: 6.250%;">SDI</th>
-    <th colspan="4" style="width: 12.500%; font-size: 75%; text-align: right; border: none;">LSB</th>
-    <th colspan="11" style="width: 34.375%; text-align: center; border: none;">Data</th>
-    <th colspan="2" style="width: 6.250%;">SSM</th>
-    <th colspan="4" style="width: 12.500%; font-size: 75%; text-align: left; border: none;">MSB</th>
     <th style="width: 3.125%;">P</th>
+    <th colspan="2" style="width: 6.25%; font-size: 75%;">SSM</th>
+    <th colspan="4" style="width: 12.5%; font-size: 75%; text-align: left; border: none;">MSB</th>
+    <th colspan="19" style="width: 59.375%; text-align: center; border: none;">Data</th>
+    <th colspan="2" style="width: 6.25%; font-size: 75%; text-align: right; border: none;">LSB</th>
+    <th colspan="2" style="width: 6.25%; font-size: 75%; text-align: left; border: none;">SDI</th>
+    <th colspan="4" style="width: 12.5%; color: red; text-align: center; border: none;">Label</th>
+    <th colspan="2" style="width: 6.25%; font-size: 75%; text-align: right; border: none;">MSB</th>
   </tr>
-  <tr style="font-size: 66%; text-align: center;">
+  <tr style="font-size: 60%; text-align: center;">
+    <td>32</td>
+    <td>31</td>
+    <td>30</td>
+    <td>29</td>
+    <td>28</td>
+    <td>27</td>
+    <td>26</td>
+    <td>25</td>
+    <td>24</td>
+    <td>23</td>
+    <td>22</td>
+    <td>21</td>
+    <td>20</td>
+    <td>19</td>
+    <td>18</td>
+    <td>17</td>
+    <td>16</td>
+    <td>15</td>
+    <td>14</td>
+    <td>13</td>
+    <td>12</td>
+    <td>11</td>
+    <td>10</td>
+    <td>9</td>
     <td>8</td>
     <td>7</td>
     <td>6</td>
@@ -117,38 +143,38 @@ NOTE: this ARINC429 word is packed in little-endian format (LSB goes before MSB)
     <td>3</td>
     <td>2</td>
     <td>1</td>
-    <td>9</td>
-    <td>10</td>
-    <td>11</td>
-    <td>12</td>
-    <td>13</td>
-    <td>14</td>
-    <td>15</td>
-    <td>16</td>
-    <td>17</td>
-    <td>18</td>
-    <td>19</td>
-    <td>20</td>
-    <td>21</td>
-    <td>22</td>
-    <td>23</td>
-    <td>24</td>
-    <td>25</td>
-    <td>26</td>
-    <td>27</td>
-    <td>28</td>
-    <td>29</td>
-    <td>30</td>
-    <td>31</td>
-    <td>32</td>
   </tr>
 </table>
 </div>
 
+| P  | SSM |     Data   | SDI | Label | 
+|---|------|------------|-----|------|
+|32 |31 - 30  | 29 <---> 11| 10 - 9   | 8 <---> 1  |
+
+
 ## 2.2 Using the SDI
 To understand with the SDI does it’s interesting to think of it as a personalised label. Imagine we have two flight computers that are giving showing us the position in our MFD. The MFD will receive through ARINC429 the same label but with different SDIs so its knows from where each values comes from.
 ## 2.3 SSM states
-The SSM will vary depending on the kind of data that is being encoded. In general, we can 
+The SSM status meaning will change depending on how we encode the value:
+
+- BNR:
+
+| Bit: 31 | Bit: 30 | Value in Hex | Decoded info         |
+|----|----|-----------|--------------------|
+| 0  | 0  | 0x0       | Failure Warning    |
+| 0  | 1  | 0x1       | No computed data   |
+| 1  | 0  | 0x2       | Functional Test    |
+| 1  | 1  | 0x3       | Normal Operation   |
+
+- BCD
+
+| Bit: 31 | Bit: 30 | Value in Hex | Decoded info         |
+|----|----|-----------|--------------------|
+| 0  | 0  | 0x0       | Plus, North, East, Right, To, Above    |
+| 0  | 1  | 0x1       | No computed data   |
+| 1  | 0  | 0x2       | Functional Test    |
+| 1  | 1  | 0x3       | Minus, South, West, Left, From, Below|
+
 
 
 # 3 Encoding ARINC429
@@ -161,7 +187,7 @@ To encode this information accurately, consider several parameters to ensure pre
 - **Offset:** Is there a need to adjust the baseline value?
 - **Most Significant Bit (MSB):** Are you utilizing all available data bits to store information?
 - **Least Significant Bit (LSB):** This also concerns the use of data bits for information storage.
-- **Sign**: Is it positive or negative?
+- **Sign**: Is it positive or negative? The sign is store in the bit 29.
 
 MSB and LSB are crucial when there's a lot of data to transmit but insufficient labels. As you might realize, a single byte (allowing for 255 different labels) isn't enough without reusing labels to encode more information across various bits of the message.
 
@@ -192,7 +218,7 @@ Cool, now we can start the encoding process.
 3. The SSM is 3. So 0b11.
 4. The SDI is zero. So 0b00
 5. Our label is 205(octal ). So it is 0b110010000
-6. Our parity bit need to be 1( to be odd)
+6. Our parity bit needs to be 1( to be odd)
 
 With this in mind, we can add this to the below table:
 
@@ -282,6 +308,7 @@ With this in mind, we can add this to the below table:
     </tr>
 </table>
 </div>
+
 Finally, we reverse the label and put it out front. Note that the next table is a bit odd. 
 I show the label as the first element and then I add the rest of the word. 
 
