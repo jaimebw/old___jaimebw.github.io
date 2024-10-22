@@ -5,14 +5,14 @@ subtitle: A guide and resource
 tags: [a429,wasm,cpp,c]
 comments: true
 ---
-*Note*: press [here](#enc-calc) to go directly to the encoding calculator.
+*Note*: click [here](#enc-calc) to go directly to the encoding calculator.
 # 1. Introduction
 
 If you have ever dealt with avionics in aircraft, you've definitely crossed paths with ARINC429.
 This protocol is the standard used for transferring data between different systems in aviation, and it can be challenging to work with at times.
 Designed in the 1970s, it has a unique way of transmitting data and is limited in the quantity of information it can send. Despite its age, ARINC429 remains widely used in modern aircraft due to its reliability and established infrastructure.
 
-This post intends to help the newbies/not-so-newbies on how it works from a software perspective. If you want a more details, check this links:
+This post intends to help the newbies or not-so-newbies on how it works from a software perspective. If you want more details, check these links:
 * [Wikipedia](https://en.wikipedia.org/wiki/ARINC_429)
 * [AIM](https://www.aim-online.com/wp-content/uploads/2019/07/aim-tutorial-oview429-190712-u.pdf)
 
@@ -20,9 +20,9 @@ Also, at the end of this post, you'll find a handy tool for calculating ARINC429
 
 # 2. ARINC429 101: Basics
 
-The A429 format is based in transferring fixed-lenght 32 bit frames refereds as "words". These words contain an id, its value and some extra information.
+The A429 format is based on transferring fixed-length 32 bit frames referred to as "words". These words contain an id, its value and some extra information.
 
-We can distingish three main different types of encoding:
+We can distinguish three main types of encoding:
 
 * Binary (BNR): normally used to encode floating point values
 * Binary Coded Decimal (BCD): normally used to encode integers
@@ -33,7 +33,7 @@ There are more types but we wont discuss them here.
 ## 2.1 The Word format
 An ARINC429 word is made up of 5 different parts:
 
-* **Label**: the id of the information. Fixed for the system but it can change between aplications.
+* **Label**: the id of the information. Fixed for the system but it can change between applications.
 * **Source/Destination Identifiers(SDI)**: indicates the intended receiver/transmitting subsystem. 
 * **Data**: the encoded data
 * **Sign/Status Matrix(SSM)**: indicates status or the sign of the data being sent
@@ -94,7 +94,7 @@ The below table shows a visual representation of the word.
 </div>
 
 
-The intersting aspect of ARINC429 is that when transmitted, the label is reversed (e.g., binary 01101010 becomes 01010110).
+One interesting aspect of ARINC429 is that when transmitted, the label is reversed (e.g., binary 01101010 becomes 01010110).
 The following table illustrates how a word appears when serialized onto the bus:
 
 
@@ -142,7 +142,7 @@ To encode this information accurately, consider several parameters to ensure pre
 - **Offset:** Is there a need to adjust the baseline value?
 - **Most Significant Bit (MSB):** Are you utilizing all available data bits to store information?
 - **Least Significant Bit (LSB):** This also concerns the use of data bits for information storage.
-- **Sign**: Is it positive or negative? The sign is store in the bit 29.
+- **Sign**: Is it positive or negative? The sign is stored in the bit 29.
 
 MSB and LSB are crucial when there's a lot of data to transmit but insufficient labels. As you might realize, a single byte (allowing for 255 different labels) isn't enough without reusing labels to encode more information across various bits of the message.
 
@@ -162,17 +162,17 @@ With these parameters defined, you can proceed to compute the encoded value. In 
 This setup ensures accurate and reliable data transmission critical for high-speed aviation.
 
 
-So, lets start by calculating the encoded value:
+So, let's start by calculating the encoded value:
 
 $$ Val_{E} = \frac{value - offset}{scale} = \frac{200 - 0}{0.5} = 400 $$
 
-Cool, now we can start the encoding process. 
+Now we can start the encoding process. 
 
 1. The MSB is 28. Therefore, the 29 bit will be set as zero for the sign.
-2. The encoded value is 400 that is 0b110010000( 9 bits). We have  28-17=11  bits for our data field so we have extra two bits( yay!)
+2. The encoded value is 400 that is 0b110010000( 9 bits). We have  28-17=11  bits for our data field so we have extra two bits(yay!)
 3. The SSM is 3. So 0b11.
 4. The SDI is zero. So 0b00
-5. Our label is 205(octal ). So it is 0b110010000
+5. Our label is 205(octal). So it is 0b10000101
 6. Our parity bit needs to be 1( to be odd)
 
 
@@ -187,7 +187,7 @@ Finally, we reverse the label and put it out front. Note that the next table is 
 
 
 Now, we need to transform this binary codes into the hexadecimal word format.
-To do so, we group in 4 bytes that generate our Words(32 bits). 
+To do so, we group in 4 bytes that generate our words(32 bits). 
 
 * The first byte of our message includes bits from 32 to 25 : 0xE0(0b11100000)
 * The second byte of our message includes bits from 24 to 17 : 0x06(0b0000110)
@@ -217,7 +217,7 @@ Now, let's proceed with the calculations:
    - 1: Extended range tank
 
 Let's assume we have an extended range tank, so we'll set byte 28 to 1.
-(If we were sending only this information, we would finished here. Add the correct SSM, SDI and calcualte the partity; and send it. )
+(If we were sending only this information, we would finish here. Add the correct SSM, SDI and calculate the partity; and send it. )
 
 2. Encoding the fuel quantity (bytes 27 to 11):
 Suppose our fuel sensor reports 1000 liters. We'll use the formula:
@@ -234,7 +234,7 @@ The binary representation of 2000 is 0b11111010000 (11 bits).
    - Parity: To be calculated
 
 
-This finally yields with our data:
+This finally yields our data:
 
 | P  | SSM |     Data   | SDI | Label | 
 |---|------|------------|-----|------|
@@ -249,22 +249,33 @@ the binary side. All values should match, except for the data bytes. The sum of 
 
 Binary Coded Decimal is another way to transmit data. It is specially useful when we want to transmit 
 integers. In this case, we can encode up to 4 full digits or 5 digits. 
-There are 18 data bits, and in order to represent a value from 0 to 9 we need 4 bits. Therefore, we have 4 bits for the first four digits but then we only have 3 for our most significant digit. Threfore, the last three digist will only be able to represent up to 7.
+There are 18 data bits, and in order to represent a value from 0 to 9 we need 4 bits. Therefore, we have 4 bits for the first four digits but then we only have 3 for our most significant digit. Therefore, the last three digits will only be able to represent up to 7.
 
-There are some rules regarding how to do this in ARINC429:
+If the value we want to represent is greater than 79999(80001 for example), bits 27 to 29 will be padded with zeros and the most significant digit will pass to be the third most significant bit (08000) and we will lose the last digit(1).
 
-1. If the value is bigger than 79999(80000 for example), bits 27 to 29 will be padded with zeros and the most significant digit will pass to be the third most significant bit (0800). 
-
-As an example of encoding the data, we could think of the value 79876. It´s less than 7999 so we will be able to encode it:
+As an example of encoding the data, we could think of the value 79876. It´s less than 79999 so we will be able to encode it:
 - 29 to 27: ```1 1 1```
 - 26 to 23: ```1 0 0 1```
 - 22 to 19: ```1 0 0 0```
 - 18 to 15: ```0 1 1 1```
 - 14 to 11: ```0 1 1 0```
 
+Now, if we wanted to encode the value 80001 (80001 > 80000):
+- 29 to 27: ```0 0 0```
+- 26 to 23: ```1 0 0 0```
+- 22 to 19: ```0 0 0 0```
+- 18 to 15: ```0 0 0 0```
+- 14 to 11: ```0 0 0 0```
+
+# 4. Final Remarks
+ARINC429 is an old but established standard in avionics, and it seems like it will continue to haunt us for the next few decades. As technology and computing evolve, the limitations of ARINC429 in terms of data capacity and speed present ongoing challenges.
+
+To overcome these bottlenecks, we have to find imaginative solutions, such as using multiple labels to send larger data sets, like files, across several ARINC429 words. This allows us to stretch the protocol's capabilities while staying within its constraints.
+
+While ARINC429 may not be the most advanced protocol, its reliability ensures that it will stick around in aviation systems. The challenge is finding innovative ways to make it work alongside new technologies, ensuring it remains relevant as avionics systems evolve.
 
 
-### Encoding calculator {#enc-calc}
+# Encoding calculator {#enc-calc}
 <div id="wasm-container">
 
 <style>
