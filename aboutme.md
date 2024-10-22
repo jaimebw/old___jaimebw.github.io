@@ -11,5 +11,4 @@ I have a lot of experience in different fields regarding aviation, data science,
 - I'm currently working for Avidyne Corporation building cool stuff. 
 - If you are looking for consulting or want to ask me any questions, hit me up on LinkedIn or in X.
 - If you want to know more about me, just know that I like computers, aircraft, motorbikes and old books.
-- My [CV](assets/pdf/cv.pdf).
 
