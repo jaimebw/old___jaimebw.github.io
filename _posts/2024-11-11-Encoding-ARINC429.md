@@ -28,7 +28,13 @@ We can distinguish three main types of encoding:
 * Binary Coded Decimal (BCD): normally used to encode integers
 * Discrete (DSC): used to encode state values ( ON/OFF values for example)
 
-There are more types but we wont discuss them here.
+There are more encodings but these are the most common ones.
+
+As for the transmission speeds (which we won't be discussing in detail), ARINC429 operates at two standard rates:
+
+* High Speed: 100 kHz (100,000 bits per second)
+* Low Speed: 12.5 kHz (12,500 bits per second)
+
 
 ## 2.1 The Word format
 An ARINC429 word is made up of 5 different parts:
@@ -36,7 +42,7 @@ An ARINC429 word is made up of 5 different parts:
 * **Label**: the id of the information. Fixed for the system but it can change between applications.
 * **Source/Destination Identifiers(SDI)**: indicates the intended receiver/transmitting subsystem. 
 * **Data**: the encoded data
-* **Sign/Status Matrix(SSM)**: indicates status or the sign of the data being sent
+* **Sign/Status Matrix(SSM)**: indicates status or the sign of the data being sent. It is an optional field.
 * **Parity(P)**: error code. It uses the odd parity to make sure that the message information has not been corrupted.
 
 The below table shows a visual representation of the word.
@@ -94,7 +100,11 @@ The below table shows a visual representation of the word.
 </div>
 
 
-One interesting aspect of ARINC429 is that when transmitted, the label is reversed (e.g., binary 01101010 becomes 01010110).
+One interesting aspect of ARINC429 is that when transmitted, the label is reversed (e.g., binary 01101010 becomes 01010110). 
+This is due to the early days of A429, when the hardware would use shift registers to receive the data. By reversing the label, the hardware could easily reject words that were not meant for it or weren't part of its grouping.
+
+It is important to note that while there are standard label values (e.g., label 205 for Mach number, 310 for latitude), these assignments are not strictly enforced and may vary between different systems and applications.
+
 The following table illustrates how a word appears when serialized onto the bus:
 
 
@@ -105,7 +115,9 @@ The following table illustrates how a word appears when serialized onto the bus:
 ## 2.2 Understanding SDI (Source/Destination Identifier)
 The SDI can be thought of as a way to differentiate between multiple sources or destinations for the same type of data. Here's a practical example:
 Imagine an aircraft with two flight computers, both capable of providing position information to the Multi-Function Display (MFD). 
-To distinguish between these sources we will set different SDIs to their messages.
+To distinguish between these sources we will set different SDIs to their messages. Its usage is a incosistent across different systems, so it is important to check the system documentation to understand how it is used.
+
+The SDI field, while optional, can serve dual purposes. In some cases, it's used to extend the data field, effectively providing additional bits for the message payload. This is particularly common when encoding latitude (label 310) or longitude (label 311) values, where every available bit is valuable for maintaining precision.
 ## 2.3 SSM states
 The SSM (Sign/Status Matrix) bits have different meanings depending on the encoding type used:
 
@@ -128,6 +140,16 @@ The SSM (Sign/Status Matrix) bits have different meanings depending on the encod
 | 1  | 0  | 0x2       | Functional Test    |
 | 1  | 1  | 0x3       | Minus, South, West, Left, From, Below|
 
+### DSC
+
+| Bit: 31 | Bit: 30 | Value in Hex | Decoded info         |
+|----|----|-----------|--------------------|
+| 0  | 0  | 0x0       | Verified data, Normal Operation      |
+| 0  | 1  | 0x1       | No computed data   |
+| 1  | 0  | 0x2       | Functional Test    |
+| 1  | 1  | 0x3       | Failure Warning   |
+
+
 These SSM states provide important context about the data being transmitted, 
 such as its validity, directionality, or operational status.
 
@@ -144,11 +166,11 @@ To encode this information accurately, consider several parameters to ensure pre
 - **Least Significant Bit (LSB):** This also concerns the use of data bits for information storage.
 - **Sign**: Is it positive or negative? The sign is stored in the bit 29.
 
-MSB and LSB are crucial when there's a lot of data to transmit but insufficient labels. As you might realize, a single byte (allowing for 255 different labels) isn't enough without reusing labels to encode more information across various bits of the message.
+MSB and LSB are crucial when determining the scale and precision of the data.
 
 With these parameters defined, you can proceed to compute the encoded value. In this example, we use:
 
-- **Label:** `0205` (Outside Air Temperature, typically represented in octal format)
+- **Label:** `0211` (Outside Air Temperature, typically represented in octal format)
 - **SSM:** `3` (Normal Operation for BNR data)
 - **SDI:** `0` 
 - **Value:** `200°C` (assuming supersonic flight conditions)
@@ -239,17 +261,29 @@ This finally yields our data:
 | P  | SSM |     Data   | SDI | Label | 
 |---|------|------------|-----|------|
 |32 |31 - 30  | 29          <--->                  11| 10 - 9   | 1 <---> 8  |
-|1 |1     1  | 0 1 0 1 1 1 1 1 0 1 0 0 0 0 0 0 0 0 | 0 0   | 0 0 1 0 0 0 1 1 |
+|1 |1     1  | 0 1 0 1 1 1 1 1 0 1 0 0 0 0 0 0 0 0 | 0 0   | 1 1 1 0 0 0 0 1 |
 
 
 You can verify this operation in the calculator by entering both variables separately and examining the byte values on 
 the binary side. All values should match, except for the data bytes. The sum of the data bytes will produce the encoding we obtained.
 
+When combining BNR and DSC encodings in the same word, the data field is divided into two sections: the lower bits are reserved for discrete values, while bits 29 down to the remaining higher bits are used for the signed binary data. This arrangement allows both types of data to coexist within the same ARINC429 word while maintaining their respective functionalities.
+
 ## 3.3 Encoding BCD
 
 Binary Coded Decimal is another way to transmit data. It is specially useful when we want to transmit 
 integers. In this case, we can encode up to 4 full digits or 5 digits. 
-There are 18 data bits, and in order to represent a value from 0 to 9 we need 4 bits. Therefore, we have 4 bits for the first four digits but then we only have 3 for our most significant digit. Therefore, the last three digits will only be able to represent up to 7.
+Let's break down how BCD encoding works in ARINC429:
+
+The data field provides 19 bits (bits 11-29) for encoding decimal digits. Since each decimal digit (0-9) requires 4 bits, we can encode digits as follows:
+
+- First digit (rightmost): bits 11-14 (4 bits)
+- Second digit: bits 15-18 (4 bits)
+- Third digit: bits 19-22 (4 bits)
+- Fourth digit: bits 23-26 (4 bits)
+- Fifth digit (leftmost): bits 27-29 (3 bits)
+
+Due to having only 3 bits for the most significant digit, the maximum value that can be encoded is 79999. Any value above this will be truncated, as the leftmost digit can only represent values 0-7 using 3 bits.
 
 If the value we want to represent is greater than 79999(80001 for example), bits 27 to 29 will be padded with zeros and the most significant digit will pass to be the third most significant bit (08000) and we will lose the last digit(1).
 
@@ -266,6 +300,8 @@ Now, if we wanted to encode the value 80001 (80001 > 80000):
 - 22 to 19: ```0 0 0 0```
 - 18 to 15: ```0 0 0 0```
 - 14 to 11: ```0 0 0 0```
+
+We will lose the last digit and the value will be 80000.
 
 # 4. Final Remarks
 ARINC429 is an old but established standard in avionics, and it seems like it will continue to haunt us for the next few decades. As technology and computing evolve, the limitations of ARINC429 in terms of data capacity and speed present ongoing challenges.
