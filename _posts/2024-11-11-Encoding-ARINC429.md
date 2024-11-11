@@ -170,7 +170,7 @@ MSB and LSB are crucial when determining the scale and precision of the data.
 
 With these parameters defined, you can proceed to compute the encoded value. In this example, we use:
 
-- **Label:** `0211` (Outside Air Temperature, typically represented in octal format)
+- **Label:** `0205` (Outside Air Temperature, typically represented in octal format) (yes, 205 is the label for Mach number, but we are using it for temperature because we can)
 - **SSM:** `3` (Normal Operation for BNR data)
 - **SDI:** `0` 
 - **Value:** `200°C` (assuming supersonic flight conditions)
