@@ -10,7 +10,7 @@
 ############################
 
 # Name of website
-title: Jaime's website
+title: Jaime Bowen Varela
 
 # Your name to show in the footer
 author: Jaime Bowen Varela
@@ -21,7 +21,7 @@ author: Jaime Bowen Varela
 
 navbar-links:
   About Me: "aboutme"
-  On-going projects: "projects"
+  Projects: "projects"
   Conferences & publications: "publications"
 
 ################
@@ -52,28 +52,8 @@ social-network-links:
 #  facebook: deanattali
   github: jaimebw
   twitter: jaimebw
-#  patreon: DeanAttali
-#  youtube: c/daattali
-#  medium: yourname
-#  reddit: yourname
   linkedin: jaimebw
-#  xing: yourname
-#  stackoverflow: "3943160/daattali"
-#  snapchat: deanat78
-#  instagram: deanat78
-#  spotify: yourname
-#  telephone: +14159998888
-#  steam: deanat78
-#  twitch: yourname
-#  yelp: yourname
-#  telegram: yourname
-#  calendly: yourname
-#  mastodon: instance.url/@username
-#  ORCID: your ORCID ID
   google-scholar: citations?user=SIFn5O8AAAAJ&hl=es
-#  discord: invite/invite_code or users/userid 
-#  kaggle: yourname
-#  hackerrank: yourname
 
 # If you want your website to generate an RSS feed, provide a description
 # The URL for the feed will be https://<your_website>/feed.xml
@@ -228,7 +208,6 @@ google_analytics: "G-RNS9QCESY6"
 #  mapping: pathname
 #  reactions-enabled: 1
 #  emit-metadata: 0
-#  theme: light
 
 ################
 # --- Misc --- #
@@ -243,7 +222,6 @@ date_format: "%B %-d, %Y"
 #################################################################################
 # --- You don't need to touch anything below here (but you can if you want) --- #
 #################################################################################
-
 # Output options (more information on Jekyll's site)
 timezone: "America/Toronto"
 markdown: kramdown
@@ -285,4 +263,5 @@ exclude:
 plugins:
   - jekyll-paginate
   - jekyll-sitemap
+
 
