@@ -19,10 +19,10 @@ As someone said, Rome wasn't build in a day. Same is applicable to my expertise 
 The first thing that I had to do (apart from learning how to code and think in Verilog) was to see what was the easiest model to implement to achive some kind of control of a simulation
 output going into an FPGA.
 
-To do this, I had(more like we, thanks Rodrigo) a couple of questions arised:
-1. What is the easiest protocol to interact with an FPGA? -> A simple 
-2. What is the simplest oscillator that I can control? -> The [Stuart-Landau oscillator](https://en.wikipedia.org/wiki/Stuart%E2%80%93Landau_equation)
-3. How can I do arithmetic operations in the FPGA? -> ~~Using IP cores~~ Implement or use an existing [FPU](https://en.wikipedia.org/wiki/Floating-point_unit) implementation
+To do this, I had(more like we, thanks Rodrigo and Francisco) a couple of questions arised:
+1. What is the easiest protocol to interact with an FPGA? 
+2. What is the simplest oscillator that I can control? 
+3. How can I do arithmetic operations in the FPGA? 
 4. How to combine everything to have a real hardware-in-the loop (HIL) setup?
 
 The next sections will anwser the questions.
@@ -58,21 +58,63 @@ Moreover, to make sure that the system is reliable, both buffers have a small PI
 ## 2.2 What is the simplest oscillator (equation) that I can control?
 
 In the world of fluid mechanics, there is nothing that can be considered simple. Studying the behavoir of fluids is challenging and something that I deem difficult.
-Therefore, I had to consult with my advisor Rodrigo Castellanos, that reccomended me to start with the Landau oscillator. Using the work from [] I finally got the references and the control model that I need.
+Therefore, I had to consult with my advisor Rodrigo Castellanos, that reccomended me to start with the Landau oscillator. Using the work from Isaac Robledo [1] I finally got the references and the control model that I need.
 
-ADD EQUATION AND MODEL HERE
+The selected model is the function that represents the oscillatory motion of the von Karman vortex shedding behind a cylinder:
 
-Yet, here we enocunter the next question:
+$$
+\begin{cases}
+\dot{a}_1 = (1 - a_1^2 - a_2^2) a_1 - a_2, \\
+\dot{a}_2 = (1 - a_1^2 - a_2^2) a_2 + a_1 + b(a_1, a_2),
+\end{cases}
+$$
 
-## 2.3 How can I do aritmetic operations in an FPGA?
+The control is going to be characterize by the function b, which it will be calculated as:
 
-Well, this one took me a bit of thinking. If you see the equation to control, there is actually nothing really weird there. Just an easy multiplication and some addition right? Well, that be easy if I had a CPU,
-but I dont have access to one here... CPUs have something called Floating-Point Unit (FPU) that basically takes care of the operations related to floating-point numbers. 
-Therefore, I want to use floating point units, I need to use an ip-core for FPGA or build my own FPU. OR, the third option, that my other advisor Francisco Barranco, told me, use fixed point arithmetic.
+$$
+b(a_1,a_2) = a_1 \cdot b_1 + a_2 \cdot b_2
+$$
 
-Fixed point arithmetic uses integers instead of floats, so there is no need for an FPU. Altough, we have a limited number of decimal precision. I have added a really good blog post that explains a bit on how to use fixed point arithmethic.
+I'll get in more detail in the next section.
+    
+## 2.3 How can I do arithmetic operations in an FPGA?
 
-Now, we need to combine everything together:
+This challenge required a fundamental shift in my thinking. Looking at the Landau oscillator equations, you might think: "It's just multiplication and addition—how hard could it be?" But there's a critical difference between software and hardware implementations.
+
+In a CPU, floating-point operations are handled by dedicated Floating-Point Units (FPUs) that efficiently manage the complex IEEE-754 standard with its mantissa, exponent, and sign bit. On an FPGA, I had three options:
+
+1. **Use an IP core**: Many FPGA vendors offer floating-point IP cores, but these are often proprietary, resource-intensive, and limit portability.
+
+2. **Build my own FPU**: Theoretically possible, but would require significant development time and FPGA resources that could be better allocated to the control system itself.
+
+3. **Use fixed-point arithmetic**: The approach recommended by my advisor Francisco Barranco, which offers an elegant compromise.
+
+### Fixed-Point Arithmetic: The Elegant Solution
+
+Fixed-point representation uses integers to approximate real numbers by implicitly placing a decimal point at a predetermined position. For example, in a Q16.16 format:
+
+- 16 bits for the integer part
+- 16 bits for the fractional part
+- Total: 32 bits (standard integer width)
+
+This approach offers several advantages for my FPGA implementation:
+
+- **Resource efficiency**: Uses standard integer DSP blocks already available in the FPGA
+- **Deterministic timing**: Operations complete in a fixed number of clock cycles
+- **Predictable precision**: Error bounds can be mathematically determined
+- **Simpler implementation**: Requires only shifts, additions, and multiplications
+
+The trade-off is reduced dynamic range and precision compared to floating-point, but for my control application, a Q16.16 format provides sufficient precision (±0.0000152 resolution) while maintaining a reasonable range (±32,768).
+
+### Implementation Challenges
+
+Converting the Landau oscillator equations to fixed-point wasn't trivial. Key considerations included:
+
+1. **Overflow prevention**: The term $$(1 - a_1^2 - a_2^2)$$ could potentially overflow during intermediate calculations
+2. **Multiplication precision**: Products of two Q16.16 numbers result in Q32.32 format, requiring careful scaling
+3. **Division operations**: These are resource-intensive and were avoided through mathematical reformulation
+
+The resulting arithmetic module processes the control law $$b(a_1,a_2) = a_1 \cdot b_1 + a_2 \cdot b_2$$ in just 4 clock cycles, achieving the performance needed for real-time control.
 
 ## 2.4 How to combine everything to have a real HIL setup?
 
@@ -102,38 +144,32 @@ is way easier to use tha the verilog test benches.
 
 ### 3.1.2 UART Rx module
 
-There is not much mistery in building an UART Rx and there are plenty of examples everywhere. You can check the module here LINK TO MODULE.
+There is not much mistery in building an UART Rx and there are plenty of examples everywhere. You can check the module [here](https://github.com/jaimebw/verilog_modules/blob/main/src/uart_rx.v) My implementation contains a couple of paremeters to change the baud rate, frame size, etc...
 
-My implementation contains a couple of paremeters to change the baud rate, frame size, etc...
-
-
-<script src="https://gist.github.com/alghanmi/c5d7b761b2c9ab199157.js"></script>
-
-To test, same, you can look at the testing here LINK TO TEST
+The verification phase is done using coco-tb, you can check my test bench script [here](https://github.com/jaimebw/verilog_modules/blob/main/tb/test_uart_rx.py)
 
 ### 3.1.3 UART Rx PID Buffer module
 
-This one took a bit more of effort. The idea behind is to load the frames in the correct place. I'm sending 32 bit numbers throuhg UART in 4 pieces. 
+This module, UartRxPidBuffer, is responsible for reconstructing two 32-bit fixed-point control inputs (a1 and a2) from UART packets using a custom framing protocol. Each value is transmitted in four separate packets, and the expected structure is:
+START_FRAME | PID | VALUE | END_FRAME.
 
-The number frame looks like this:
-START_FRAME| PID | VALUE | END FRAME
+Each byte is associated with a specific PID that identifies which part of a1 or a2 it belongs to. The module uses a finite state machine to parse incoming bytes, capture valid data, and assert a one-cycle ready pulse once both a1 and a2 are fully assembled. A special TEST_PID is handled separately, allowing for quick injection of test data.
 
-The buffer needs to store all these values before sending the signla to the contro law module to read the buffer.
-
-This module was hard to build. At first, I went with an easy implementation that kinda of worked when veryfing it, but when veryfhint the top module
-I ran into a lot of race conditions and I had to rebuild the whole thing from top to bottom to make sure that the timing was correct. By far, the most
-challening part to build.
+Building this module was particularly challenging. My initial approach worked in isolated tests, but integration with the top-level design exposed race conditions and incorrect timing behavior. I had to completely redesign the FSM, add explicit tracking of received byte lanes (a1_written, a2_written), and manage the control logic to guarantee a clean, single-cycle handshake. The final design is stable, timing-safe, and cleanly interfaces with the control law block.
+<details>
+<summary>UART Rx PID Buffer Module (Click to expand)</summary>
+<iframe frameborder="0" scrolling="no" style="width:100%; height:3355px;" allow="clipboard-write" src="https://emgithub.com/iframe.html?target=https%3A%2F%2Fgithub.com%2Fjaimebw%2Fverilog_modules%2Fblob%2Fmain%2Fsrc%2Fuart_rx_pid_buffer.v&style=github-dark&type=code&showBorder=on&showLineNumbers=on&showFileMeta=on&showFullPath=on&showCopy=on"></iframe>
+</details>
 
 ### 3.1.4 Control Law module
 
-As explained in the previous section, the control law is super easy to embed. It needs to calculate b which is calcualted:
-b = a1*b1 + a2*b2
-
+Once the fixed point arithmetic was dealt with, we coul
+ 
 b1 and b2 are predifined paraemters will a static value(for now) and a1 and a2 are passed from the rx buffer.
 
 Good thing about this block is that is purely combinationals. Therefore, I dont really need to think much about timing. Testing it was easy.
 
-ADD LINKS HERE TOO
+<iframe frameborder="0" scrolling="no" style="width:100%; height:814px;" allow="clipboard-write" src="https://emgithub.com/iframe.html?target=https%3A%2F%2Fgithub.com%2Fjaimebw%2Fverilog_modules%2Fblob%2Fmain%2Fsrc%2Fcontrol_law.v&style=github-dark&type=code&showBorder=on&showLineNumbers=on&showFileMeta=on&showFullPath=on&showCopy=on"></iframe>
 
 ### 3.1.5 UART TX PID buffer
 
@@ -202,4 +238,8 @@ Each step needs to packet the values received into a format called Q16.16 that t
 - Real CFD calculations, start with something simple and build from tehre
 
 # References
-[Fixed Point Arithmethic](https://vanhunteradams.com/FixedPoint/FixedPoint.html)
+
+1. Robledo Martin, I. (2025). HyGO: A Python toolbox for Hybrid Genetic Optimization. *Journal of Open Source Software*.
+
+2. [Fixed Point Arithmethic](https://vanhunteradams.com/FixedPoint/FixedPoint.html)
+
