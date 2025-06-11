@@ -167,28 +167,39 @@ Once the fixed point arithmetic was dealt with, we coul
  
 b1 and b2 are predifined paraemters will a static value(for now) and a1 and a2 are passed from the rx buffer.
 
-Good thing about this block is that is purely combinationals. Therefore, I dont really need to think much about timing. Testing it was easy.
+Good thing about this block is that is purely combinationals. Therefore, I dont really need to think much about timing. [Testing](https://github.com/jaimebw/verilog_modules/blob/main/tb/test_control_law.py) it was easy.
 
 <iframe frameborder="0" scrolling="no" style="width:100%; height:814px;" allow="clipboard-write" src="https://emgithub.com/iframe.html?target=https%3A%2F%2Fgithub.com%2Fjaimebw%2Fverilog_modules%2Fblob%2Fmain%2Fsrc%2Fcontrol_law.v&style=github-dark&type=code&showBorder=on&showLineNumbers=on&showFileMeta=on&showFullPath=on&showCopy=on"></iframe>
 
 ### 3.1.5 UART TX PID buffer
 
-This module takes b and transform it into an UART frame as the one on 3.2. Waits for a signal from the RX buffer and then reads, and send the buffer info to the UART Tx module.
+This module takes $$b$$ , transforms it into an UART frame as the one on 3.2. It wait for a signal from the UART Rx buffer that tells it to read the value from the control law module.
 
-ADD LINK TO CODE
+You can check the code here:
+<details>
+<summary> UART Tx PID Buffer Module (Click to expand) </summary>
+<iframe frameborder="0" scrolling="no" style="width:100%; height:2200px;" allow="clipboard-write" src="https://emgithub.com/iframe.html?target=https%3A%2F%2Fgithub.com%2Fjaimebw%2Fverilog_modules%2Fblob%2Fmain%2Fsrc%2Fuart_tx_pid_buffer.v&style=github-dark&type=code&showBorder=on&showLineNumbers=on&showFileMeta=on&showFullPath=on&showCopy=on"></iframe>
+</details>
+
+The verification script can be found [here](https://github.com/jaimebw/verilog_modules/blob/main/tb/test_uart_tx_pid_buffer.py)
+
 
 ### 3.1.6 UART Tx
 
-As the UART Rx, easy module and you can find a lot of examples online showcasing how to build this module
+Not much explanatio here too. Just a normal UART Tx module that has some paremeters to change the baud rate, frame size, etc...
+You can check the code [here](https://github.com/jaimebw/verilog_modules/blob/main/src/uart_tx.v) and the verification script [here](https://github.com/jaimebw/verilog_modules/blob/main/tb/test_uart_tx.py)
 
 ## 3.2 Verifying the top module
 
 After weeks of trial and error, I finalized the blocks and started working on uniting everything together.
 The verilog implementation does not have much of a mistery:
+
 ADD CODE
 
-The issue was the verification, if you check the test script, I had to test the normal operation mode and the test mode. Yes, I add a test mode to make sure that at least
-the thing lives before trying to make it run with the simulation working on the background.
+The issue was the verification, if you check the test script, I had to test the normal operation mode and the test mode. 
+
+The test mode is activated by a special frame sent by my simulation script to test that at least, the FPGA is alive and talking.
+
 
 ## 3.3 Synthesazing the modules
 
@@ -209,24 +220,11 @@ I went with a), mainly because I tryed to optimize the code but I was unsecsfull
 
 With this solved, I was ready to start with the simulation!
 
+# 4. Simulating: Python-Based Closed-Loop Simulation with Hardware-in-the-Loop
 
-# 4. Simulating: Running a Python based simulation and interfacing with the hardware
+With the FPGA logic (mostly) complete, the next step involved building a Python-based simulation environment to interact with the hardware in real time. Using scipy and pyserial, I implemented a control loop where Python numerically solves the oscillator’s differential equation, sends the current system state to the FPGA via UART, receives the control response, and computes the next step accordingly.
 
-The FPGA part is done(lol, not really) and we can jump into the sim part.
-By using some external libraries like py-serial and the famous scipy, I was able to create a nice code that was capable of solving the EDO for the oscillator
-and at the same time, it was able to send through UART the result of the steps and read the value of the control law and compute the next step.
-
-## 4.1 Py-Serial: Reading and sending through UART
-
-Pyserial offers the possiblity of reading and sending UART through any of the available COM ports in the computer. This was trivial to implement with a bit of trial and error.
-
-## 4.2 Scipy: Solving the differential equaiton
-
-Scipy contains a good EDO solver that is able to run each step, and get the result of the step. I wrote some code with a couple of threads to ensure that running of this.
-
-## 4.3 Tranforming floats into fixed point
-
-Each step needs to packet the values received into a format called Q16.16 that then it is framed and send through UART and at teh same time, it needs to translate the incoming frames into a float.
+The scipy.integrate.solve_ivp function provided a reliable method for integrating the nonlinear dynamics of the oscillator one step at a time. Meanwhile, pyserial allowed for smooth communication over UART by writing and reading framed 32-bit Q16.16 fixed-point values. I developed utility functions to convert between floating-point and Q16.16 format, ensuring accurate representation and transmission of state and control values. The entire loop runs with multithreading to decouple the UART I/O from the simulation steps, allowing real-time exchange of data between the software model and the FPGA logic.
 
 
 
@@ -239,7 +237,6 @@ Each step needs to packet the values received into a format called Q16.16 that t
 
 # References
 
-1. Robledo Martin, I. (2025). HyGO: A Python toolbox for Hybrid Genetic Optimization. *Journal of Open Source Software*.
-
+1. Robledo Martin, I. (2025). HyGO: A Python toolbox for Hybrid Genetic Optimization. 
 2. [Fixed Point Arithmethic](https://vanhunteradams.com/FixedPoint/FixedPoint.html)
 
