@@ -47,7 +47,7 @@ Apart from that, you also need to control the state of the FPGA and perform arit
 So far, we need the following modules:
 
 1. UART Tx module: to transmit information to the laptop
-2. UART Rx module: to read information from the lapto
+2. UART Rx module: to read information from the laptop
 
 
 Additionally, we need dedicated buffer modules to handle data aggregation. Since UART communication typically transmits only 1 byte per frame, sending a single-precision (32-bit) or double-precision (64-bit) floating-point value requires 4 or 8 frames, respectively.
@@ -114,6 +114,7 @@ The trade-off is reduced dynamic range and precision compared to floating-point,
 
 By now, we have a clear picture of the different blocks needed to make this work. From an FPGA perspective, I need to build five blocks (six if we count the top-level module) and integrate them with a simulation of the Landau oscillator. Easy, right? Well… not so much, but that’s the challenge.
 
+
 The next sections will walk through the development of the FPGA blocks and the Python-based simulation interface.
 
 
@@ -131,7 +132,11 @@ The five blocks to build are:
 4. UART TX PID Buffer
 6. UART TX
 
-All of these blocks are connected through a top-level module.
+All of these blocks are connected through a top-level module. 
+
+The final setup will look like this:
+![Landau FPGA setup](/assets/img/thesis_post/system_schema.png)
+
 
 Concurrently, once a block is built, it is simulated and tested. For this, I use [cocotb](https://www.cocotb.org/). Its Python interface and pytest integration make it far easier to work with than traditional Verilog testbenches.
 
@@ -143,12 +148,12 @@ The verification phase is handled with cocotb; the testbench is available [here]
 
 ### 3.1.3 UART Rx PID Buffer module
 
-This module, **UartRxPidBuffer**, is responsible for reconstructing two 32-bit fixed-point control inputs (`a1` and `a2`) from UART packets using a custom framing protocol. Each value is transmitted in four separate packets, and the expected structure is:
-
+This module, UartRxPidBuffer,is responsible for reconstructing two 32-bit fixed-point control inputs (`a1` and `a2`) from UART packets using a custom framing protocol. Each value is transmitted in four separate packets, and the expected structure is:
 
 START_FRAME | PID | VALUE | END_FRAME.
 
-EEach byte is associated with a specific **PID** that identifies which part of `a1` or `a2` it belongs to. The module uses a **finite state machine (FSM)** to parse incoming bytes, capture valid data, and assert a **one-cycle `ready` pulse** once both `a1` and `a2` are fully assembled.  
+Each byte is associated with a specific PID that identifies which part of `a1` or `a2` it belongs to. The module uses a finite state machine (FSM)to parse incoming bytes, 
+capture valid data, and assert a one-cycle `ready` pulseonce both `a1` and `a2` are fully assembled.  
 
 A special `TEST_PID` is handled separately, allowing quick injection of test data.
 
@@ -164,12 +169,10 @@ The final design is now stable, timing-safe, and cleanly interfaces with the Con
 
 Once the fixed-point arithmetic was set up, the **Control Law** module became straightforward to implement.  
 
-In this block, `b1` and `b2` are predefined parameters with static values (for now), while `a1` and `a2` are inputs passed directly from the UART Rx buffer. The module computes:
+In this block, `k1` and `k2` are predefined parameters with static values (for now), while `a1` and `a2` are inputs passed directly from the UART Rx buffer. The module computes:
 
 $$
-\begin{cases}
-b(a1, a2) = a1 * b1 + a2 * b2
-\end{cases}
+b(a_1, a_2) = a_1 * k_1 + a_2 * k_2
 $$
 
 The good thing about this block is that it’s purely **combinational**. That means I don’t need to worry much about timing or clock cycles—the output updates immediately whenever the inputs change.  
@@ -227,7 +230,7 @@ The synthesis process has several steps and varies slightly depending on the FPG
 
 ---
 
-### The resource problem
+### 3.3.1 The resource problem
 
 Here’s where I ran into trouble. The synthesis report showed **over 100% utilization** of certain FPGA resources. At that point, I had two options:
 
@@ -254,9 +257,9 @@ This meant I had to revisit two of my earlier questions:
 
 ## 4.1 What is the easiest protocol to interact with an FPGA integrated with a SoC?
 
-My first thought was to keep using **UART**, just like in my prototype. I could configure the SoC’s I/O pins, connect through GPIOs, and reuse the design I had already built.  
+My first thought was to keep using UART, just like in my prototype. I could configure the SoC’s I/O pins, connect through GPIOs, and reuse the design I had already built.  
 
-But my advisor Francisco pointed out that this setup was **overkill** for an SoC. Instead, he suggested I use **[AXI4](https://en.wikipedia.org/wiki/Advanced_eXtensible_Interface)**—the standard bus that ARM CPUs use to talk to FPGA fabric. AXI4 offered higher throughput, cleaner integration, and a much more scalable solution for my HIL experiments.  
+But my advisor Francisco pointed out that this setup was overkill for a SoC. Instead, he suggested I use **[AXI4](https://en.wikipedia.org/wiki/Advanced_eXtensible_Interface)**—the standard bus that ARM CPUs use to talk to FPGA fabric. AXI4 offered higher throughput, cleaner integration, and a much more scalable solution for my HIL experiments.  
 
 So that’s what I did.  
 
@@ -265,8 +268,8 @@ For the other research questions, nothing really changed—the only major shift 
 
 This was the start of a whole new learning curve. Suddenly, it wasn’t just about writing Verilog anymore. I had to learn:  
 
-- How to use **Vivado** for synthesis and block design  
-- How to build and customize **PetaLinux**  
+- How to use Vivado for synthesis and block design  
+- How to build and customize PetaLinux
 - How to integrate everything into a Zynq SoC workflow  
 
 It took time (and a lot of mistakes), but eventually I got over the initial hurdles. The move to SoC was painful, but it opened the door to more powerful experiments.
@@ -275,14 +278,14 @@ It took time (and a lot of mistakes), but eventually I got over the initial hurd
 
 After a couple of months of iteration (and plenty of trial and error), I finally reached a stable setup that gave me two key achievements:
 
-- A working **PetaLinux build and recipe**  
-- An **FPGA bitstream** that synthesized and ran successfully  
+- A working PetaLinux build and recipe
+- An FPGA bitstream that synthesized and ran successfully  
 
-The best part was that I could **reuse the Control Law module** from my earlier UART prototype. The main challenge was configuring the **AXI4 connection** between the ARM processor and the FPGA fabric. My approach relied heavily on online resources, combined with guidance from my advisors.
+The best part was that I could reuse the Control Law modulefrom my earlier UART prototype. The main challenge was configuring the AXI4 connection between the ARM processor and the FPGA fabric. My approach relied heavily on online resources, combined with guidance from my advisors.
 
-### Why AXI4?
+### 4.3.1 Why AXI4?
 
-The **AXI4 interface** provides a standardized bus for communication between the ARM core and the FPGA logic inside the Zynq SoC. By implementing **AXI4-Lite slave registers**, I created memory-mapped control and status registers. This allowed the Linux application running on the ARM processor to directly read and write parameters to the Control Law module.
+The AXI4 interface provides a standardized bus for communication between the ARM core and the FPGA logic inside the Zynq SoC. By implementing AXI4-Lite slave registers, I created memory-mapped control and status registers. This allowed the Linux application running on the ARM processor to directly read and write parameters to the Control Law module.
 
 Compared to UART, this setup offered several advantages:
 
@@ -298,7 +301,11 @@ This architecture cleanly separates the **communication interface** (AXI4 + ARM)
 
 You can check a snapshot of the block diagram here
 
-ADD_IMAGE
+![Zynq FPGA setup](/assets/img/thesis_post/zynq_schema.png){: width="2000" }
+<!-- <p align="center"> -->
+<!--   <img src="/assets/img/thesis_post/zynq_schema.png" alt="Landau FPGA setup" width="1000px"> -->
+<!-- </p> -->
+
 
 ## 4.4 Verification
 
@@ -327,8 +334,21 @@ The end result:
 
 <blockquote class="twitter-tweet"><p lang="en" dir="ltr">Finally made a breakthrough in my FPGA journey . It ain’t much but it’s honest work. <a href="https://t.co/b8KfbdRoHe">pic.twitter.com/b8KfbdRoHe</a></p>&mdash; Jaime (@jaimebw) <a href="https://twitter.com/jaimebw/status/1969601886874714464?ref_src=twsrc%5Etfw">September 21, 2025</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 
+## The real end result
 
-# 6. Future development
+After some back and foward, and heavily basing my work on Isaac's implementation. I used the control law as:
+
+$$
+b = 4.88419 \cdot \frac{\sin(a_1)+a_1 -a_2}{0.67255}
+$$
+
+To do so, as I didnt want to use an FPU, I had to apply the taylor polinomial to a second degree:
+
+$$
+b \approx 7.26219\;\Bigg(2a_1 \;-\; \frac{a_1^3}{6} \;+\; \frac{a_1^5}{120} \;-\; a_2\Bigg)
+$$
+
+# 6. Future developments
 
 Looking ahead, my next efforts will be centered on bringing **reinforcement learning (RL)** into the FPGA. The ultimate goal is to move beyond fixed control laws and enable the hardware to both **train** and **run inference** directly in real time. This opens the door to adaptive controllers that can learn and optimize while the system is operating, something especially powerful for active flow control.
 
