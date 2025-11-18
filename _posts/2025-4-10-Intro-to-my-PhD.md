@@ -33,37 +33,28 @@ Before diving into Verilog, I needed a roadmap. Together with my advisors Rodrig
 
 The rest of this blog follows my attempt to answer these questions, one by one.
 
-
-The next sections will anwser the questions.
-
 # 2. Answering the questions 
 
 ## 2.1 What is the easiest protocol to interact with an FPGA?
 
-After some thought, I realized my best starting point was [UART](https://en.wikipedia.org/wiki/Universal_asynchronous_receiver-transmitter). It’s the simplest, most beginner-friendly way to talk to an FPGA: just two wires (TX and RX), no extra clocks, and a well-established protocol. If you’ve ever tinkered with an Arduino or ESP32, UART feels like an old friend. The twist with FPGAs? You don’t just “import a library.” You have to build the protocol from scratch, one flip-flop at a time. There’s no cool `#include <uart.h>` to save you.
+After some thought, I realized my best starting point was UART
+. It’s the simplest, most beginner-friendly way to talk to an FPGA: just two wires (TX and RX), no extra clocks, and a well-established protocol. If you’ve ever tinkered with an Arduino or ESP32, UART feels like an old friend. The twist with FPGAs? You don’t just “import a library.” You have to build the protocol from scratch, one flip-flop at a time. There’s no cool ```#include <uart.h>``` to save you.
 
-Apart from that, you also need to control the state of the FPGA and perform arithmetic operations. Seems easy enough, but remember: we have no CPU! Everything must be implemented in digital logic, meaning we essentially configure the FPGA to act as a specialized processor.
+Beyond basic communication, I also needed a way to control the state of the FPGA and perform arithmetic operations. That sounds straightforward, but there is no CPU here—everything must be implemented in digital logic, effectively turning the FPGA into a custom processor.
 
-So far, we need the following modules:
+From a modular point of view, the design requires:
 
-1. UART Tx module: to transmit information to the laptop
-2. UART Rx module: to read information from the laptop
+- UART Tx module: transmits information to the laptop
 
+- UART Rx module: reads information from the laptop
 
-Additionally, we need dedicated buffer modules to handle data aggregation. Since UART communication typically transmits only 1 byte per frame, sending a single-precision (32-bit) or double-precision (64-bit) floating-point value requires 4 or 8 frames, respectively.
+- UART works with 1 byte per frame, so sending a 32-bit or 64-bit value means splitting it into 4 or 8 frames. To handle this cleanly, I added two buffer modules:
 
-That means we need two more modules:
+- UART Rx buffer: collects incoming bytes, reconstructs 32-bit fixed-point values (for example, a1 and a2), and forwards them to the arithmetic/control module once a complete value is available
 
-- UART Rx buffer – stores incoming pieces until we have the full value, then forwards it to the arithmetic module
-- UART Tx buffer – splits the result from the arithmetic module into frames and sends them sequentially to the UART Tx module
+- UART Tx buffer: takes the computed result from the control module, splits it into bytes, and feeds them sequentially to the UART Tx module
 
-So far, we need the next things:
-
-
-Additionally, we need dedicated buffer modules to handle data aggregation, since UART communication typically transmits only 1 byte of information per frame. This means that when working with single-precision (32-bit) or double-precision (64-bit) floating-point numbers, we'll need to assemble 4 or 8 frames respectively to reconstruct the complete value.
-
-Finally, to ensure system reliability, both buffers implement lightweight PID checking so each frame is validated and serialized correctly.
-
+To make the whole system robust, both buffers include lightweight PID checking so that each frame is validated before being accepted or transmitted.
 
 ## 2.2 What is the simplest oscillator (equation) that I can control?
 
@@ -78,7 +69,7 @@ $$
 \end{cases}
 $$
 
-The control is going to be characterize by the function b, which it will be calculated as:
+The control input enters the system through the function $$b$$, which in this first version I define as:
 
 $$
 b(a_1,a_2) = a_1 \cdot b_1 + a_2 \cdot b_2
@@ -130,7 +121,7 @@ The five blocks to build are:
 2. UART Rx PID Buffer
 3. Control Law
 4. UART TX PID Buffer
-6. UART TX
+5. UART TX
 
 All of these blocks are connected through a top-level module. 
 
@@ -243,6 +234,11 @@ I initially tried option 2, but my optimization attempts didn’t reduce usage e
 
 <blockquote class="twitter-tweet"><p lang="en" dir="ltr">Good news, got 2% better lol <a href="https://t.co/tAAnppItog">https://t.co/tAAnppItog</a> <a href="https://t.co/jwQ6i4dz5g">pic.twitter.com/jwQ6i4dz5g</a></p>&mdash; Jaime (@jaimebw) <a href="https://twitter.com/jaimebw/status/1925397672422232420?ref_src=twsrc%5Etfw">May 22, 2025</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 
+As a reference, you can see the size of the IceSugar nano FPGA in the image below:
+
+![Ice Sugar Nano FPGA](/assets/img/thesis_post/fpga_mini.jpg){: width="2000" }
+
+
 
 
 # 4. The change that SoC me!
@@ -253,6 +249,11 @@ This meant I had to revisit two of my earlier questions:
 
 1. What is the easiest protocol to interact with an FPGA when it’s integrated into a SoC?  
 2. How do I combine everything into a real hardware-in-the-loop (HIL) experiment?  
+
+
+Below is a comparison in size between the IceSugar Nano and the Zynq7020 SoC:
+
+![FPGA Compare](/assets/img/thesis_post/fpga_compare.jpg){: width="2000" }
 
 
 ## 4.1 What is the easiest protocol to interact with an FPGA integrated with a SoC?
@@ -375,10 +376,11 @@ Looking ahead, my next efforts will be centered on bringing **reinforcement lear
 In parallel, I plan to extend the simulations toward **real CFD calculations**. The idea is to start with simplified CFD models and progressively scale up in complexity, always keeping the FPGA in the loop. This combination of RL on hardware and CFD-based environments will push the setup closer to the long-term vision of my PhD: a hardware-in-the-loop digital twin capable of experimenting with flow control strategies under realistic aerodynamic conditions.
 
 
+
 # References
 
 1. Robledo Martin, I. (2025). HyGO: A Python toolbox for Hybrid Genetic Optimization. 
-2. [Fixed Point Arithmethic](https://vanhunteradams.com/FixedPoint/FixedPoint.html)
+2. [Fixed Point Arithmetic](https://vanhunteradams.com/FixedPoint/FixedPoint.html)
 
 
 
