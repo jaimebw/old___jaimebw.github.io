@@ -336,17 +336,37 @@ The end result:
 
 ## The real end result
 
-After some back and foward, and heavily basing my work on Isaac's implementation. I used the control law as:
+After several iterations — and heavily building on Isaac’s original implementation — I settled on the following control law:
 
 $$
-b = 4.88419 \cdot \frac{\sin(a_1)+a_1 -a_2}{0.67255}
+b = 4.88419 \cdot \frac{\sin(a_1) + a_1 - a_2}{0.67255}
 $$
 
-To do so, as I didnt want to use an FPU, I had to apply the taylor polinomial to a second degree:
+Since I wanted to avoid using an FPU on the FPGA, I expanded the sine term using a Taylor polynomial.  
+To keep resource usage low, I truncated it at the second non-linear term:
 
 $$
 b \approx 7.26219\;\Bigg(2a_1 \;-\; \frac{a_1^3}{6} \;+\; \frac{a_1^5}{120} \;-\; a_2\Bigg)
 $$
+
+This approximation was then ported to fixed-point arithmetic.  
+You can see the final Verilog implementation [here](https://github.com/jaimebw/fpga_landau_control/blob/axi_impl/src/control_law_hygo.v)
+
+And with this controller in place, the FPGA successfully stabilizes the system:
+
+![FPGA Controlling](/assets/img/thesis_post/fpga_control.jpeg){: width="2000" }
+
+From the phase portrait we observe that both $$a_1$$ and $$a_2$$ converge to zero and remain there — confirming that the controller is effective.
+
+Below are the reference results from HyGO [1].  
+The pink curve is the target behavior I should obtain.  
+However, my implementation deviates from it, likely due to numerical issues introduced by:
+
+1. fixed-point arithmetic, and  
+2. the limited-order Taylor approximation of the sine function.
+
+![Hygo](/assets/img/thesis_post/hygo_result.png){: width="2000" }
+
 
 # 6. Future developments
 
