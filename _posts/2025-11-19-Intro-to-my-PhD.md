@@ -377,10 +377,11 @@ In parallel, I plan to extend the simulations toward **real CFD calculations**. 
 
 
 
+
 # References
 
 1. Robledo Martin, I. (2025). HyGO: A Python toolbox for Hybrid Genetic Optimization. 
 2. [Fixed Point Arithmetic](https://vanhunteradams.com/FixedPoint/FixedPoint.html)
 
 
-
+_"No hay belleza sino en la lucha."_
